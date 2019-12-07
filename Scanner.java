@@ -2,13 +2,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
 public class Scanner extends Tokenstream {
 	private StreamTokenizer strtok;
 	
-	private List<Var> vars = new ArrayList<>();
+	private HashMap<Identifier, Var> vars = new HashMap<>();
 	private ArrayList<PD> procedures = new ArrayList<>();
 	private boolean NumisReal;
 	
@@ -312,11 +313,11 @@ public class Scanner extends Tokenstream {
 		}
 		private Var getVar(String id) 
 		{
-			for (Var v : vars) 
+			for (Identifier currid : vars.keySet()) 
 			{
-				if(v.getID().equals(id)) 
+				if(currid.getID().toString().equals(id)) 
 				{
-					return v;
+					return vars.get(currid);
 				}
 			}
 			
@@ -407,7 +408,7 @@ public class Scanner extends Tokenstream {
 				Type vdtype = vd.getType();
 				for(Identifier id : vd.getIds())
 				{
-					vars.add(new Var(id, vdtype));
+					vars.put(id, new Var(id, vdtype));
 				}
 			}
 			
@@ -488,8 +489,13 @@ public class Scanner extends Tokenstream {
 					this.next();
 					variable();
 					Expression assignment = assignment();
-					//var.setValue(assignment.);
-					//return new AssignS(var, );
+					if(!vars.containsKey(var.getID())) 
+					{
+						throw new Exception(String.format("Variable %s was not defined", var.getID()));
+						
+					}
+					vars.get(var.getID()).setNumtype(assignment.getType());
+					return new AssignS(var, assignment);
 				}
 				
 			return null;
@@ -549,7 +555,9 @@ public class Scanner extends Tokenstream {
 
 		private Expression expression() throws Exception
 		{
-			Expression expr = simpexp();
+			SimpExpr simpE = simpexp();
+			Expression expr = simpE;
+			expr.setType(simpE.getType());
 			RelOp relop = rel();
 			while(null != relop)
 			{
@@ -593,16 +601,34 @@ public class Scanner extends Tokenstream {
 			return null;
 		}
 		private SimpExpr simpexp() throws Exception{
-			Sign nextsign = sign(); 
-			Term term = term();
-			SimpExpr simpE = new SimpExpr(nextsign, term);
-			Op nextOp = add();
-			while(null != nextOp)
+			try 
 			{
-				simpE.addTerm(term(), nextOp);
-				nextOp = add();
+					
+				
+				Sign nextsign = sign(); 
+				Term term = term();
+				SimpExpr simpE = new SimpExpr(nextsign, term);
+				Op nextOp = add();
+				while(null != nextOp)
+				{
+					Term termToAdd = term();
+					if(term.sameType(termToAdd))
+					{
+						simpE.addTerm(termToAdd, nextOp);
+						nextOp = add();
+					}
+					
+					else 
+					{
+						throw new Exception(String.format("Cannot apply %s to different types", nextOp.toString()));
+					}
+				}
+				return simpE;
+			}catch(NullPointerException npe) 
+			{
+				System.err.print(true);
+				return null;
 			}
-			return simpE;
 		}
 
 		private Term term() throws Exception 
@@ -611,8 +637,17 @@ public class Scanner extends Tokenstream {
 			Op multop = mult();
 			while(null != multop)
 			{
-				retTerm.addMultOp(multop, factor());
-				multop = mult();
+				Factor toMult = factor();
+				if(retTerm.sameType(toMult)) 
+				{
+					retTerm.addMultOp(multop, toMult);
+					multop = mult();
+				}
+				else 
+				{
+					throw new Exception(String.format("Cannot apply %s to different types", multop.toString()));
+				}
+				
 			};
 			return retTerm;
 		}
@@ -621,15 +656,27 @@ public class Scanner extends Tokenstream {
 			Factor factor = null;
 			if(this.isNum()) 
 			{
-				factor = new Factor(getVal());
+				if(Tokenstream.DOUBLE == tok) 
+				{
+					factor = new Factor(getVal(), ftype.real);
+				}
+				else if(Tokenstream.INTEGER == tok)
+				{
+					factor = new Factor(getVal(), ftype.integer);
+				}
+				else 
+				{
+					factor = new Factor(getVal());
+				}
 				this.next();
 				return factor;
 			}
 			else if(isAVar(thisToken())) 
 			{
-				factor = new Factor(getVar(this.thisToken()));
+				Var v = getVar(this.thisToken());
+				factor = new Factor(v, v.getNumtype());
 				this.next();
-				//variable();
+				
 				return factor;
 			}
 			else if(this.nextIfMatch("not"))

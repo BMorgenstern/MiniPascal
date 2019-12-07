@@ -1,7 +1,10 @@
 import java.util.ArrayList;
 import java.util.List;
 
-public interface Token{
+enum ftype{uninitialized,integer,real};
+
+public interface Token
+{
 	public String toString();
 	public List<Token> subTokens();
 }
@@ -228,6 +231,7 @@ class Var implements Token
 	private Val value = null;
 	private Identifier id;
 	private Type type;
+	private ftype numtype=ftype.uninitialized;
 	
 	
 	public Var(Identifier id, Type type) 
@@ -242,9 +246,9 @@ class Var implements Token
 		this.type = type;
 	}
 	
-	public String getID() 
+	public Identifier getID() 
 	{
-		return id.getID();
+		return id;
 	}
 	
 	public void setValue(Val val) 
@@ -278,6 +282,14 @@ class Var implements Token
 	public List<Token> subTokens() 
 	{
 		return null;
+	}
+
+	public ftype getNumtype() {
+		return numtype;
+	}
+
+	public void setNumtype(ftype numtype) {
+		this.numtype = numtype;
 	}
 	
 }
@@ -333,6 +345,7 @@ class SP implements Token{
 class Expression implements Token
 {
 	private List<Token> exprParts;
+	private ftype type;
 	public void add(Token t) 
 	{
 		exprParts.add(t);
@@ -353,6 +366,12 @@ class Expression implements Token
 	public List<Token> subTokens() 
 	{
 		return exprParts;
+	}
+	public ftype getType() {
+		return type;
+	}
+	public void setType(ftype type) {
+		this.type = type;
 	}
 }
 
@@ -392,7 +411,10 @@ class SimpExpr extends Expression
 	private Sign sign;
 	private Term term;
 	private List<AddingTerm> addterms;
-	
+	public ftype getType() 
+	{
+		return term.getType();
+	}
 	public SimpExpr(Sign sign, Term term) {
 		super();
 		this.sign = sign;
@@ -458,6 +480,18 @@ class Term implements Token
 	{
 		multOps.add(new MultingFactor(factor, op));
 	}
+	public ftype getType() 
+	{
+		return factor.getType();
+	}
+	public boolean sameType(Factor f) 
+	{
+		return factor.sameType(f);
+	}
+	public boolean sameType(Term t) 
+	{
+		return factor.sameType(t.factor);
+	}
 	public String toString() 
 	{
 		String retStr = factor.toString();
@@ -477,9 +511,34 @@ class Term implements Token
 class Factor implements Token
 {
 	private Token factor;
+	private ftype type=ftype.uninitialized;
+	
+	
 	public Factor(Token fac) 
 	{
 		factor = fac;
+		type=ftype.uninitialized;
+	}
+	public ftype getType() {
+		return this.type;
+	}
+	public Factor(Token fac, ftype type) 
+	{
+		factor = fac;
+		this.type = type;
+	}
+	public boolean sameType(Factor f) 
+	{
+		if(f.type != ftype.uninitialized) 
+		{
+			if(this.type == ftype.uninitialized) 
+			{
+				this.type = f.type;
+				return true;
+			}
+			return f.type.equals(this.type);
+		}
+		return true;
 	}
 	public List<Token> subTokens() 
 	{
