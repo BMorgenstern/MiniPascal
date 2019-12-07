@@ -14,7 +14,7 @@ begin
 
 x:=10;
 //y:=-5.0; // error
-y:=5; // ok
+y:=-5; // ok
 z := x+y;
 write(z) 
 end.

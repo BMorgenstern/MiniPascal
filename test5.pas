@@ -1,5 +1,5 @@
 program whileLoop;
-var a: array[1..5]of integer; i1 :integer;
+var a: array[-1..5]of integer; i1 :integer;
 procedure example;
 
 

@@ -1,7 +1,7 @@
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StreamTokenizer;
-import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -251,35 +251,35 @@ public class Scanner extends Tokenstream {
 		}
 		private boolean isNum() 
 		{
+			sign();
 			return (Tokenstream.DOUBLE==this.tok || Tokenstream.INTEGER==this.tok);
 		}
-		private Val IntorReal() 
+		private Val IntorReal(Sign sign) 
 		{
-			if(NumisReal) 
+			int multFactor = 1;
+			if(null != sign) 
 			{
-				return new Real(this.nval);
+				if(sign.toString().equals("-")) 
+				{
+					multFactor = -1;
+				}
+			}
+			if(Tokenstream.DOUBLE==this.tok) 
+			{
+				return new Real(this.nval*multFactor);
 			}
 			else
 			{
-				return new Int((int)this.nval);
+				return new Int((int)this.nval*multFactor);
 			}
 		}
 		public Val getVal() 
 		{
+			Sign sign = sign();
+			
 			if(isNum()) 
 			{
-				return IntorReal();
-			}
-			else if('-' == this.tok) 
-			{
-				next();
-				if(Tokenstream.DOUBLE==this.tok) 
-				{
-					return IntorReal();
-				}
-				this.pushBack();
-				return null;
-				
+				return IntorReal(sign);
 			}
 			return null;
 			
@@ -772,8 +772,6 @@ public class Scanner extends Tokenstream {
 			Int end = null;
 			
 			this.advanceOrError("[");
-			if(this.isNum())
-			{
 				try 
 				{
 					begin = (Int) getVal();
@@ -783,15 +781,7 @@ public class Scanner extends Tokenstream {
 				{
 					throw new Exception("Array bounds must be ints");
 				}
-			}
-			else
-			{
-				this.ErrorMsg("Number");
-			}
 			this.advanceOrError(".");
-			//this.advanceOrError(".");
-			if(this.isNum())
-			{
 				try 
 				{
 					end = (Int) getVal();
@@ -801,11 +791,7 @@ public class Scanner extends Tokenstream {
 				{
 					throw new Exception("Array bounds must be ints");
 				}
-			}
-			else 
-			{
-				this.ErrorMsg("Number");
-			}
+				
 			this.advanceOrError("]");
 			this.advanceOrError("of");
 			IndexRange range = new IndexRange(begin,end);
