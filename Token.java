@@ -231,6 +231,16 @@ class Var implements Token
 	private Val value = null;
 	private Identifier id;
 	private Type type;
+	public Type getType() 
+	{
+		return type;
+	}
+
+	public void setType(Type type) 
+	{
+		this.type = type;
+	}
+
 	private ftype numtype=ftype.uninitialized;
 	
 	
@@ -296,6 +306,15 @@ class Var implements Token
 
 class PDP implements Token{
 	private List<Token> pds;
+	public PDP() 
+	{
+		pds = new ArrayList<>();
+	}
+	public PDP(PD pd) 
+	{
+		pds = new ArrayList<>();
+		this.addProcedure(pd);
+	}
 	public String toString() {
 		String ret = "";
 		for(Token p : pds)
@@ -326,6 +345,9 @@ class PD implements Token{
 		List<Token> t = new ArrayList<>();
 		t.add(id); t.add(block);
 		return t;
+	}
+	public Identifier getID() {
+		return id;
 	}
 }
 

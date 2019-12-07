@@ -10,7 +10,7 @@ public class Scanner extends Tokenstream {
 	private StreamTokenizer strtok;
 	
 	private HashMap<Identifier, Var> vars = new HashMap<>();
-	private ArrayList<PD> procedures = new ArrayList<>();
+	private HashMap<Identifier,PD> procedures = new HashMap<>();
 	private boolean NumisReal;
 	
 	
@@ -487,7 +487,7 @@ public class Scanner extends Tokenstream {
 				{
 					Var var = getVar(thisToken());
 					this.next();
-					variable();
+					variable(var);
 					Expression assignment = assignment();
 					if(!vars.containsKey(var.getID())) 
 					{
@@ -729,8 +729,9 @@ public class Scanner extends Tokenstream {
 					pdp = new PDP();
 				}
 				pdp.addProcedure(pro);
+				procedures.put(pro.getID(), pro);
 			}
-			return null;
+			return pdp;
 			
 		}
 		private PD procdec() throws Exception{
@@ -740,7 +741,6 @@ public class Scanner extends Tokenstream {
 			this.next();
 			this.advanceOrError(";");
 			Block block = block();
-			this.next();
 			return new PD(id, block);
 		}
 		
@@ -815,11 +815,17 @@ public class Scanner extends Tokenstream {
 		}
 		
 
-		private Expression variable() throws Exception 
+		private Expression variable(Var var) throws Exception 
 		{
+			/*
+			 * error if brackets and not arrayType*/
 			Expression retExp = null;
 			if(this.nextIfMatch("[")) 
 			{
+				if(var.getType().getClass() != ArrayType.class) 
+				{
+					throw new Exception(String.format("Indexing of non-array variable %s", var.getID().toString()));
+				}
 				retExp = expression();
 				this.advanceOrError("]");
 			}
